@@ -1,0 +1,3 @@
+[submodule "files/cardano-token-registry"]
+	path = files/cardano-token-registry
+	url = https://github.com/cardano-foundation/cardano-token-registry
