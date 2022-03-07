@@ -1,6 +1,7 @@
 import sys
+import json
 from http import HTTPStatus
-from flask import Flask, request
+from flask import Flask
 from flask_restx import Api, Resource, reqparse
 from werkzeug.middleware.proxy_fix import ProxyFix
 import sqlite3
@@ -15,6 +16,9 @@ app.wsgi_app = ProxyFix(app.wsgi_app)
 
 api = Api(app, version='0.1', title='Token Registry API', description='A simple API for the Cardano Token Registry',)
 ns = api.namespace(NAMESPACE, description='Cardano Token Registry')
+
+tokens_parser = reqparse.RequestParser()
+tokens_parser.add_argument('tokens', action='append', required=True)
 
 
 @ns.route('/token/<string:token_policy>/<string:token_name>')
@@ -40,7 +44,7 @@ class TokenDetails(Resource):
         if len(tokens) == 0:
             msg = {}
             msg['error'] = 'Token %s.%s not found' % (token_policy, token_name)
-            return msg, 406
+            return [msg], 406
         return tokens
 
 
@@ -68,7 +72,56 @@ class Ticker(Resource):
         if len(tokens) == 0:
             msg = {}
             msg['error'] = 'Ticker %s not found' % ticker
-            return msg, 406
+            return [msg], 406
+        return tokens
+
+
+@ns.route('/tokens')
+@api.response(HTTPStatus.OK.value, "OK")
+@api.response(HTTPStatus.NOT_ACCEPTABLE.value, "Not Acceptable client error")
+@api.response(HTTPStatus.SERVICE_UNAVAILABLE.value, "Server error")
+@api.doc(parser=tokens_parser)
+class Tokens(Resource):
+    def post(self):
+        args = tokens_parser.parse_args()
+        conn = sqlite3.connect(DB_NAME)
+        cur = conn.cursor()
+        token_policies_list = []
+        token = {}
+        tokens_list = []
+        try:
+            for item in args['tokens']:
+                token = json.loads(item)
+                if 'policy_id' in token and 'token_name' in token:
+                    token_policies_list.append(token['policy_id'])
+                    token_with_name = {}
+                    token_with_name['policy_id'] = token['policy_id']
+                    token_with_name['token_name'] = token['token_name']
+                    tokens_list.append(token_with_name)
+        except Exception as e:
+            applog.exception(e)
+            applog.error(token)
+        cur.execute("SELECT policy_id, name_hex, name, ticker, description, decimals FROM tokens WHERE policy_id in "
+                    "({seq})".format(seq=','.join(['?'] * len(token_policies_list))), token_policies_list)
+        tokens_info = cur.fetchall()
+        tokens = []
+        for item in tokens_info:
+            token = {}
+            token['policy_id'] = item[0]
+            token['name_hex'] = item[1]
+            token['name'] = item[2]
+            token['ticker'] = item[3]
+            token['description'] = item[4]
+            token['decimals'] = item[5]
+            for item in tokens_list:
+                if token['policy_id'] == item['policy_id'] and token['name_hex'] == item['token_name']:
+                    tokens.append(token)
+                    break
+        conn.close()
+        if len(tokens) == 0:
+            msg = {}
+            msg['error'] = 'Tokens not found'
+            return [msg], 406
         return tokens
 
 
@@ -117,6 +170,7 @@ if __name__ == '__main__':
     cur.execute('''CREATE INDEX IF NOT EXISTS tokens_name_hex on tokens(name_hex)''')
     cur.execute('''CREATE INDEX IF NOT EXISTS tokens_ticker on tokens(ticker)''')
     conn.commit()
+    conn.close()
 
     applog.info("*****************************************************************")
     applog.info('Starting')
