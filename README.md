@@ -12,7 +12,7 @@ When updating it, the update should be done with the following command:
 `git pull --recurse-submodules`
 
 ## Endpoints
-There are 2 API endpoints:
+There are 3 API endpoints:
 1. /api/v0/ticker/{ticker}
 The ticker is case-sensitive. A GET request to: `/api/v0/cNETA` will return the following result:
 
@@ -32,9 +32,11 @@ The ticker is case-sensitive. A GET request to: `/api/v0/cNETA` will return the 
 If the ticker is not found, the result will be (code 406):
 
 ```
-{
-  "error": "Ticker <ticker> not found"
-}
+[
+  {
+    "error": "Ticker <ticker> not found"
+  }
+]
 ```
 
 2. /api/v0/token/token_policy/token_name
@@ -43,6 +45,30 @@ A GET request to `/api/v0/token/b34b3ea80060ace9427bda98690a73d33840e27aaa8d6edb
 ```
 [
   {
+    "name": "anetaBTC",
+    "ticker": "cNETA",
+    "description": "AnetaBTC is a fully on-chain, decentralized protocol that allows Bitcoin to be directly wrapped on the Ergo and Cardano blockchains. This token serves as a Cardano governance token for anetaBTC.",
+    "decimals": 0
+  }
+]
+```
+
+3. /api/v0/tokens
+A POST request to `/api/v0/tokens` with the parameter `[{"policy_id": "b34b3ea80060ace9427bda98690a73d33840e27aaa8d6edb7f0c757a", "token_name": "634e455441"}, {"policy_id": "6ac8ef33b510ec004fe11585f7c5a9f0c07f0c23428ab4f29c1d7d10", "token_name": "4d454c44"}]` will return the following result:
+
+```
+[
+  {
+    "policy_id": "6ac8ef33b510ec004fe11585f7c5a9f0c07f0c23428ab4f29c1d7d10",
+    "name_hex": "4d454c44",
+    "name": "MELD",
+    "ticker": "MELD",
+    "description": "The governance token of the MELD protocol.",
+    "decimals": 6
+  },
+  {
+    "policy_id": "b34b3ea80060ace9427bda98690a73d33840e27aaa8d6edb7f0c757a",
+    "name_hex": "634e455441",
     "name": "anetaBTC",
     "ticker": "cNETA",
     "description": "AnetaBTC is a fully on-chain, decentralized protocol that allows Bitcoin to be directly wrapped on the Ergo and Cardano blockchains. This token serves as a Cardano governance token for anetaBTC.",
