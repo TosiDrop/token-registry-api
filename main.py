@@ -91,7 +91,7 @@ class Tokens(Resource):
         tokens_list = []
         try:
             for item in args['tokens']:
-                token = json.loads(item)
+                token = json.loads(item.replace("'", '"'))
                 if 'policy_id' in token and 'token_name' in token:
                     token_policies_list.append(token['policy_id'])
                     token_with_name = {}
