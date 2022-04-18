@@ -10,7 +10,7 @@ LOG_FILE = 'logs/application.log'
 UPDATE_LOG_FILE = 'logs/update.log'
 NAMESPACE = 'api/v0'
 HOST = '0.0.0.0'
-PORT = 8050
+PORT = os.getenv('PORT', 8050)
 
 """
 token registry settings
